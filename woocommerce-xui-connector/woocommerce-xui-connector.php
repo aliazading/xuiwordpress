@@ -73,10 +73,27 @@ final class WooCommerce_XUI_Connector {
 
 /**
  * Begins execution of the plugin.
+ *
+ * We hook into `plugins_loaded` to ensure WooCommerce is available.
  */
-function woocommerce_xui_connector() {
-    return WooCommerce_XUI_Connector::instance();
+function init_woocommerce_xui_connector() {
+    if ( ! class_exists( 'WooCommerce' ) ) {
+        add_action( 'admin_notices', 'woocommerce_xui_connector_missing_wc_notice' );
+        return;
+    }
+    WooCommerce_XUI_Connector::instance();
 }
+add_action( 'plugins_loaded', 'init_woocommerce_xui_connector' );
 
-// Let's go!
-woocommerce_xui_connector();
+/**
+ * Display an admin notice if WooCommerce is not active.
+ */
+function woocommerce_xui_connector_missing_wc_notice() {
+    ?>
+    <div class="error">
+        <p>
+            <strong><?php esc_html_e( 'WooCommerce X-UI Connector requires WooCommerce to be installed and active.', 'woocommerce-xui-connector' ); ?></strong>
+        </p>
+    </div>
+    <?php
+}
