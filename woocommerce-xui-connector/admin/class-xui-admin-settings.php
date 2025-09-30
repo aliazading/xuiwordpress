@@ -38,7 +38,7 @@ class XUI_Admin_Settings {
             'xui-admin-settings',
             plugin_dir_url( __FILE__ ) . 'js/settings.js',
             array( 'jquery' ),
-            '1.0.0',
+            '1.1.0',
             true
         );
 
@@ -58,9 +58,9 @@ class XUI_Admin_Settings {
     public function ajax_test_connection() {
         check_ajax_referer( 'xui-test-connection-nonce', 'nonce' );
 
-        $url      = esc_url_raw( $_POST['url'] );
-        $username = sanitize_text_field( $_POST['username'] );
-        $password = sanitize_text_field( $_POST['password'] );
+        $url      = isset( $_POST['url'] ) ? esc_url_raw( $_POST['url'] ) : '';
+        $username = isset( $_POST['username'] ) ? sanitize_text_field( $_POST['username'] ) : '';
+        $password = isset( $_POST['password'] ) ? sanitize_text_field( $_POST['password'] ) : '';
 
         if ( empty( $url ) || empty( $username ) || empty( $password ) ) {
             wp_send_json_error( __( 'All fields are required.', 'woocommerce-xui-connector' ) );
@@ -106,6 +106,7 @@ class XUI_Admin_Settings {
         register_setting( self::PAGE_ID, 'xui_api_url', 'esc_url_raw' );
         register_setting( self::PAGE_ID, 'xui_api_username', 'sanitize_text_field' );
         register_setting( self::PAGE_ID, 'xui_api_password', 'sanitize_text_field' );
+        register_setting( self::PAGE_ID, 'xui_subscription_path', 'sanitize_text_field' );
         register_setting( self::PAGE_ID, 'xui_enabled_inbounds', array( $this, 'sanitize_inbounds' ) );
 
         add_settings_section(
@@ -142,6 +143,15 @@ class XUI_Admin_Settings {
             array( 'id' => 'xui_api_password', 'type' => 'password' )
         );
 
+        add_settings_field(
+            'xui_subscription_path',
+            __( 'Subscription Path', 'woocommerce-xui-connector' ),
+            array( $this, 'render_text_input' ),
+            self::PAGE_ID,
+            'xui_api_credentials',
+            array( 'id' => 'xui_subscription_path', 'placeholder' => '/sub/' )
+        );
+
         add_settings_section(
             'xui_inbounds_section',
             __( 'Inbound Settings', 'woocommerce-xui-connector' ),
@@ -160,11 +170,9 @@ class XUI_Admin_Settings {
 
     /**
      * Renders a standard text input field.
-     *
-     * @param array $args The field arguments.
      */
     public function render_text_input( $args ) {
-        $id          = $args['id'];
+        $id          = isset( $args['id'] ) ? $args['id'] : '';
         $value       = get_option( $id );
         $type        = isset( $args['type'] ) ? $args['type'] : 'text';
         $placeholder = isset( $args['placeholder'] ) ? $args['placeholder'] : '';
@@ -184,15 +192,11 @@ class XUI_Admin_Settings {
      * Render the checkboxes for enabling inbounds.
      */
     public function render_inbounds_field() {
-        // This field will be populated dynamically via JavaScript.
         echo '<fieldset id="xui-inbounds-list"></fieldset>';
     }
 
     /**
      * Sanitize the enabled inbounds array.
-     *
-     * @param array $input The input array.
-     * @return array The sanitized array.
      */
     public function sanitize_inbounds( $input ) {
         return is_array( $input ) ? array_map( 'absint', $input ) : array();

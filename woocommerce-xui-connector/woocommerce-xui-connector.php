@@ -3,7 +3,7 @@
  * Plugin Name: WooCommerce X-UI Connector
  * Plugin URI: https://github.com/
  * Description: Connects WooCommerce to an X-UI panel to sell subscriptions.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Jules
  * Author URI: https://github.com/
  * License: GPL-2.0+
@@ -28,8 +28,6 @@ final class WooCommerce_XUI_Connector {
 
     /**
      * Main WooCommerce_XUI_Connector Instance.
-     *
-     * Ensures only one instance of WooCommerce_XUI_Connector is loaded or can be loaded.
      */
     public static function instance() {
         if ( is_null( self::$_instance ) ) {
@@ -73,7 +71,6 @@ final class WooCommerce_XUI_Connector {
 
 /**
  * Begins execution of the plugin.
- *
  * We hook into `plugins_loaded` to ensure WooCommerce is available.
  */
 function init_woocommerce_xui_connector() {

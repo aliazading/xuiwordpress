@@ -35,8 +35,6 @@ class XUI_Product_Settings {
 
     /**
      * Render the content of the meta box.
-     *
-     * @param WP_Post $post The post object.
      */
     public function render_meta_box_content( $post ) {
         wp_nonce_field( 'xui_product_meta_nonce', 'xui_product_meta_nonce' );
@@ -54,30 +52,28 @@ class XUI_Product_Settings {
                     <?php esc_html_e( 'Enable as X-UI Subscription', 'woocommerce-xui-connector' ); ?>
                 </label>
             </p>
-            <p class="form-field _xui_duration_days_field">
-                <label for="_xui_duration_days"><?php esc_html_e( 'Duration (days)', 'woocommerce-xui-connector' ); ?></label>
-                <input type="number" id="_xui_duration_days" name="_xui_duration_days" value="<?php echo esc_attr( $duration ); ?>" style="width:100%;">
-            </p>
-            <p class="form-field _xui_data_limit_gb_field">
-                <label for="_xui_data_limit_gb"><?php esc_html_e( 'Data Limit (GB)', 'woocommerce-xui-connector' ); ?></label>
-                <input type="number" id="_xui_data_limit_gb" name="_xui_data_limit_gb" value="<?php echo esc_attr( $data_limit ); ?>" style="width:100%;">
-            </p>
-            <p class="form-field _xui_inbound_id_field">
-                <label for="_xui_inbound_id"><?php esc_html_e( 'Target Inbound', 'woocommerce-xui-connector' ); ?></label>
-                <?php $this->render_inbounds_dropdown( $inbound_id ); ?>
-            </p>
+            <div id="xui_subscription_fields">
+                <p class="form-field _xui_duration_days_field">
+                    <label for="_xui_duration_days"><?php esc_html_e( 'Duration (days)', 'woocommerce-xui-connector' ); ?></label>
+                    <input type="number" id="_xui_duration_days" name="_xui_duration_days" value="<?php echo esc_attr( $duration ); ?>" style="width:100%;">
+                </p>
+                <p class="form-field _xui_data_limit_gb_field">
+                    <label for="_xui_data_limit_gb"><?php esc_html_e( 'Data Limit (GB)', 'woocommerce-xui-connector' ); ?></label>
+                    <input type="number" id="_xui_data_limit_gb" name="_xui_data_limit_gb" value="<?php echo esc_attr( $data_limit ); ?>" style="width:100%;">
+                </p>
+                <p class="form-field _xui_inbound_id_field">
+                    <label for="_xui_inbound_id"><?php esc_html_e( 'Target Inbound', 'woocommerce-xui-connector' ); ?></label>
+                    <?php $this->render_inbounds_dropdown( $inbound_id ); ?>
+                </p>
+            </div>
         </div>
         <script>
             jQuery(document).ready(function($) {
                 var checkbox = $('#_is_xui_product');
-                var fields = $('._xui_duration_days_field, ._xui_data_limit_gb_field, ._xui_inbound_id_field');
+                var fields = $('#xui_subscription_fields');
 
                 function toggleFields() {
-                    if (checkbox.is(':checked')) {
-                        fields.show();
-                    } else {
-                        fields.hide();
-                    }
+                    fields.toggle(checkbox.is(':checked'));
                 }
 
                 toggleFields();
@@ -89,8 +85,6 @@ class XUI_Product_Settings {
 
     /**
      * Renders the dropdown of enabled inbounds.
-     *
-     * @param int $selected_inbound_id The currently selected inbound ID.
      */
     private function render_inbounds_dropdown( $selected_inbound_id ) {
         $enabled_inbound_ids = get_option( 'xui_enabled_inbounds', array() );
@@ -105,7 +99,7 @@ class XUI_Product_Settings {
         $password = get_option( 'xui_api_password' );
 
         if ( ! $api_url || ! $username || ! $password ) {
-            echo '<p>' . esc_html__( 'API credentials are not set in plugin settings.', 'woocommerce-xui-connector' ) . '</p>';
+            echo '<p>' . esc_html__( 'API credentials are not set.', 'woocommerce-xui-connector' ) . '</p>';
             return;
         }
 
@@ -120,7 +114,7 @@ class XUI_Product_Settings {
         $all_inbounds = $api_client->get_inbounds();
 
         if ( is_wp_error( $all_inbounds ) ) {
-            echo '<p>' . esc_html__( 'Could not fetch inbounds from X-UI panel.', 'woocommerce-xui-connector' ) . '</p>';
+            echo '<p>' . esc_html__( 'Could not fetch inbounds.', 'woocommerce-xui-connector' ) . '</p>';
             return;
         }
 
@@ -129,15 +123,16 @@ class XUI_Product_Settings {
         } );
 
         if ( empty( $enabled_inbounds ) ) {
-            echo '<p>' . esc_html__( 'The enabled inbounds could not be found on the panel.', 'woocommerce-xui-connector' ) . '</p>';
+            echo '<p>' . esc_html__( 'Enabled inbounds not found on panel.', 'woocommerce-xui-connector' ) . '</p>';
             return;
         }
 
         echo '<select id="_xui_inbound_id" name="_xui_inbound_id" style="width:100%;">';
         echo '<option value="">' . esc_html__( 'Select an inbound', 'woocommerce-xui-connector' ) . '</option>';
         foreach ( $enabled_inbounds as $inbound ) {
+            $remark = isset($inbound['remark']) && $inbound['remark'] ? $inbound['remark'] : 'No name';
             echo '<option value="' . esc_attr( $inbound['id'] ) . '" ' . selected( $selected_inbound_id, $inbound['id'], false ) . '>';
-            echo esc_html( $inbound['remark'] . ' (' . $inbound['protocol'] . ')' );
+            echo esc_html( $remark . ' (' . $inbound['protocol'] . ')' );
             echo '</option>';
         }
         echo '</select>';
@@ -145,8 +140,6 @@ class XUI_Product_Settings {
 
     /**
      * Save the custom product meta fields.
-     *
-     * @param int $post_id The ID of the post being saved.
      */
     public function save_product_meta( $post_id ) {
         if ( ! isset( $_POST['xui_product_meta_nonce'] ) || ! wp_verify_nonce( $_POST['xui_product_meta_nonce'], 'xui_product_meta_nonce' ) ) {

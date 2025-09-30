@@ -26,8 +26,6 @@ class XUI_WooCommerce {
 
     /**
      * Creates an X-UI subscription when an order is marked as complete.
-     *
-     * @param int $order_id The ID of the completed order.
      */
     public function create_subscription_on_purchase( $order_id ) {
         $order = wc_get_order( $order_id );
@@ -47,7 +45,6 @@ class XUI_WooCommerce {
         foreach ( $order->get_items() as $item_id => $item ) {
             $product_id = $item->get_product_id();
 
-            // Check if it's an X-UI product and if a subscription hasn't been created yet.
             if ( 'yes' !== get_post_meta( $product_id, '_is_xui_product', true ) || wc_get_order_item_meta( $item_id, '_xui_subscription_link', true ) ) {
                 continue;
             }
@@ -61,38 +58,33 @@ class XUI_WooCommerce {
                 continue;
             }
 
-            // Create a unique email/identifier for the new client.
             $client_email = 'user' . $order->get_user_id() . '_order' . $order_id . '_item' . $item_id;
-
             $api_client = new XUI_Api_Client( $api_url );
             $login      = $api_client->login( $username, $password );
 
             if ( is_wp_error( $login ) ) {
                 $order->add_order_note( sprintf( __( 'X-UI Connector: API login failed. Reason: %s', 'woocommerce-xui-connector' ), $login->get_error_message() ) );
-                continue; // Move to next item
+                continue;
             }
 
             $sub_id = $api_client->add_client( $inbound_id, $client_email, $data_limit, $duration );
 
             if ( is_wp_error( $sub_id ) ) {
                 $order->add_order_note( sprintf( __( 'X-UI Connector: Failed to create subscription for product #%d. Reason: %s', 'woocommerce-xui-connector' ), $product_id, $sub_id->get_error_message() ) );
-                continue; // Move to next item
+                continue;
             }
 
-            // Construct the subscription link.
-            $subscription_link = rtrim( $api_url, '/' ) . '/sub/' . $sub_id;
+            $sub_path = get_option( 'xui_subscription_path', '/sub/' );
+            $normalized_path = '/' . trim( $sub_path, '/' ) . '/';
+            $subscription_link = rtrim( $api_url, '/' ) . $normalized_path . $sub_id;
 
-            // Save the link to the order item to prevent re-creation and for display to the user.
             wc_add_order_item_meta( $item_id, '_xui_subscription_link', $subscription_link );
-
             $order->add_order_note( sprintf( __( 'X-UI Connector: Successfully created subscription for product #%d. Link: %s', 'woocommerce-xui-connector' ), $product_id, $subscription_link ) );
         }
     }
 
     /**
      * Display the subscription link on the "Thank You" page.
-     *
-     * @param int $order_id The ID of the order.
      */
     public function display_subscription_link_on_thankyou( $order_id ) {
         $order = wc_get_order( $order_id );
@@ -104,8 +96,6 @@ class XUI_WooCommerce {
 
     /**
      * Display the subscription link in the "My Account" order view.
-     *
-     * @param WC_Order $order The order object.
      */
     public function display_subscription_link_in_account( $order ) {
         $this->render_subscription_links_for_order( $order, '<h2>' . __( 'Your Subscriptions', 'woocommerce-xui-connector' ) . '</h2>' );
@@ -113,10 +103,6 @@ class XUI_WooCommerce {
 
     /**
      * Display the subscription link in the order item name in emails.
-     *
-     * @param string $item_name The original item name.
-     * @param WC_Order_Item $item The order item.
-     * @return string The modified item name.
      */
     public function display_subscription_link_in_email( $item_name, $item ) {
         $link = wc_get_order_item_meta( $item->get_id(), '_xui_subscription_link', true );
@@ -128,9 +114,6 @@ class XUI_WooCommerce {
 
     /**
      * Helper function to render subscription links for a given order.
-     *
-     * @param WC_Order $order The order object.
-     * @param string $title The title to display before the links.
      */
     private function render_subscription_links_for_order( $order, $title ) {
         $has_links = false;
