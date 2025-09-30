@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class XUI_Api_Client {
 
     private $base_url;
-    private $cookies = array();
+    private $cookie_string = '';
 
     /**
      * XUI_Api_Client constructor.
@@ -47,7 +47,16 @@ class XUI_Api_Client {
             return new WP_Error( 'xui_login_failed', $error_message );
         }
 
-        $this->cookies = wp_remote_retrieve_cookies( $response );
+        // Manually extract and store the cookie string.
+        $cookies = wp_remote_retrieve_cookies( $response );
+        if ( ! empty( $cookies ) ) {
+            $cookie_parts = array();
+            foreach ( $cookies as $cookie ) {
+                $cookie_parts[] = $cookie->name . '=' . $cookie->value;
+            }
+            $this->cookie_string = implode( '; ', $cookie_parts );
+        }
+
         return true;
     }
 
@@ -55,13 +64,15 @@ class XUI_Api_Client {
      * Retrieves the list of inbounds from the X-UI panel.
      */
     public function get_inbounds() {
-        $response = wp_remote_get(
-            $this->base_url . 'panel/api/inbounds/list',
-            array(
-                'cookies' => $this->cookies,
-                'timeout' => 15,
-            )
+        $args = array(
+            'timeout' => 15,
+            'headers' => array(),
         );
+        if ( ! empty( $this->cookie_string ) ) {
+            $args['headers']['Cookie'] = $this->cookie_string;
+        }
+
+        $response = wp_remote_get( $this->base_url . 'panel/api/inbounds/list', $args );
 
         if ( is_wp_error( $response ) ) {
             return $response;
@@ -101,18 +112,19 @@ class XUI_Api_Client {
             ),
         );
 
-        $response = wp_remote_post(
-            $this->base_url . 'panel/api/inbounds/addClient',
-            array(
-                'body'    => json_encode( array(
-                    'id'       => $inbound_id,
-                    'settings' => json_encode( $client_settings ),
-                ) ),
-                'headers' => array( 'Content-Type' => 'application/json' ),
-                'cookies' => $this->cookies,
-                'timeout' => 20,
-            )
+        $args = array(
+            'body'    => json_encode( array(
+                'id'       => $inbound_id,
+                'settings' => json_encode( $client_settings ),
+            ) ),
+            'headers' => array( 'Content-Type' => 'application/json' ),
+            'timeout' => 20,
         );
+        if ( ! empty( $this->cookie_string ) ) {
+            $args['headers']['Cookie'] = $this->cookie_string;
+        }
+
+        $response = wp_remote_post( $this->base_url . 'panel/api/inbounds/addClient', $args );
 
         if ( is_wp_error( $response ) ) {
             return $response;
