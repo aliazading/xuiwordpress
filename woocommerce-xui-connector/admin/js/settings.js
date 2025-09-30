@@ -48,11 +48,13 @@ jQuery(document).ready(function ($) {
         });
 
         request.fail(function (jqXHR, textStatus, errorThrown) {
-            var errorMessage = 'An unknown error occurred. Please check the browser console for more details.';
-            if (errorThrown) {
-                errorMessage = 'AJAX Error: ' + errorThrown;
+            var errorMessage;
+            if (textStatus === 'error' && !errorThrown) {
+                errorMessage = '<strong>CORS Error or Unreachable Host:</strong> The request to your X-UI panel was blocked. This is usually a CORS issue. Please check your X-UI web server (Nginx, Caddy, etc.) configuration to ensure it allows requests from your WordPress domain (<code>' + window.location.origin + '</code>).';
             } else if (textStatus === 'timeout') {
-                errorMessage = 'The request timed out. Please check your panel URL and server status.';
+                errorMessage = '<strong>Request Timed Out:</strong> The request to your panel timed out. Please verify the panel URL and ensure it is accessible from your server.';
+            } else {
+                errorMessage = '<strong>Unknown Error:</strong> An unexpected error occurred. Please check the browser console (F12) for more details. (Status: ' + textStatus + ', Error: ' + errorThrown + ')';
             }
             notice.removeClass('notice-success').addClass('notice-error is-dismissible').html('<p>' + errorMessage + '</p>').show();
         });

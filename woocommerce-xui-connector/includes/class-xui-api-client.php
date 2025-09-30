@@ -12,14 +12,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 class XUI_Api_Client {
 
     private $base_url;
-    private $cookie_jar;
+    private $cookies = array();
 
     /**
      * XUI_Api_Client constructor.
      */
     public function __construct( $base_url ) {
         $this->base_url = rtrim( $base_url, '/' ) . '/';
-        $this->cookie_jar = new WP_Http_Cookie_Simple();
     }
 
     /**
@@ -33,7 +32,6 @@ class XUI_Api_Client {
                     'username' => $username,
                     'password' => $password,
                 ),
-                'cookies' => $this->cookie_jar->get_cookies(),
                 'timeout' => 15,
             )
         );
@@ -49,7 +47,7 @@ class XUI_Api_Client {
             return new WP_Error( 'xui_login_failed', $error_message );
         }
 
-        $this->cookie_jar->set_cookies( wp_remote_retrieve_cookies( $response ) );
+        $this->cookies = wp_remote_retrieve_cookies( $response );
         return true;
     }
 
@@ -60,7 +58,7 @@ class XUI_Api_Client {
         $response = wp_remote_get(
             $this->base_url . 'panel/api/inbounds/list',
             array(
-                'cookies' => $this->cookie_jar->get_cookies(),
+                'cookies' => $this->cookies,
                 'timeout' => 15,
             )
         );
@@ -111,7 +109,7 @@ class XUI_Api_Client {
                     'settings' => json_encode( $client_settings ),
                 ) ),
                 'headers' => array( 'Content-Type' => 'application/json' ),
-                'cookies' => $this->cookie_jar->get_cookies(),
+                'cookies' => $this->cookies,
                 'timeout' => 20,
             )
         );
