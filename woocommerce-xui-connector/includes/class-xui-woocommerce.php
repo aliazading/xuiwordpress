@@ -16,12 +16,12 @@ class XUI_WooCommerce {
      */
     public function __construct() {
         // Core functionality
-        add_action( 'woocommerce_order_status_completed', [ $this, 'create_subscription_on_purchase' ], 10, 1 );
+        add_action( 'woocommerce_order_status_completed', array( $this, 'create_subscription_on_purchase' ), 10, 1 );
 
         // Display hooks
-        add_action( 'woocommerce_thankyou', [ $this, 'display_subscription_link_on_thankyou' ], 10, 1 );
-        add_action( 'woocommerce_order_details_after_order_table', [ $this, 'display_subscription_link_in_account' ], 10, 1 );
-        add_filter( 'woocommerce_order_item_name', [ $this, 'display_subscription_link_in_email' ], 10, 2 );
+        add_action( 'woocommerce_thankyou', array( $this, 'display_subscription_link_on_thankyou' ), 10, 1 );
+        add_action( 'woocommerce_order_details_after_order_table', array( $this, 'display_subscription_link_in_account' ), 10, 1 );
+        add_filter( 'woocommerce_order_item_name', array( $this, 'display_subscription_link_in_email' ), 10, 2 );
     }
 
     /**

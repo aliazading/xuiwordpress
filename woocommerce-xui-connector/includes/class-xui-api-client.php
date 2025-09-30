@@ -35,14 +35,14 @@ class XUI_Api_Client {
     public function login( $username, $password ) {
         $response = wp_remote_post(
             $this->base_url . 'login',
-            [
-                'body'    => [
+            array(
+                'body'    => array(
                     'username' => $username,
                     'password' => $password,
-                ],
+                ),
                 'cookies' => $this->cookie_jar->get_cookies(),
                 'timeout' => 15,
-            ]
+            )
         );
 
         if ( is_wp_error( $response ) ) {
@@ -52,7 +52,8 @@ class XUI_Api_Client {
         $body = json_decode( wp_remote_retrieve_body( $response ), true );
 
         if ( ! $body['success'] ) {
-            return new WP_Error( 'xui_login_failed', $body['msg'] ?? __( 'Authentication failed.', 'woocommerce-xui-connector' ) );
+            $error_message = isset( $body['msg'] ) ? $body['msg'] : __( 'Authentication failed.', 'woocommerce-xui-connector' );
+            return new WP_Error( 'xui_login_failed', $error_message );
         }
 
         // Store the session cookies for subsequent requests.
@@ -69,10 +70,10 @@ class XUI_Api_Client {
     public function get_inbounds() {
         $response = wp_remote_get(
             $this->base_url . 'panel/api/inbounds/list',
-            [
+            array(
                 'cookies' => $this->cookie_jar->get_cookies(),
                 'timeout' => 15,
-            ]
+            )
         );
 
         if ( is_wp_error( $response ) ) {
@@ -82,7 +83,8 @@ class XUI_Api_Client {
         $body = json_decode( wp_remote_retrieve_body( $response ), true );
 
         if ( ! $body['success'] ) {
-            return new WP_Error( 'xui_inbounds_failed', $body['msg'] ?? __( 'Failed to retrieve inbounds.', 'woocommerce-xui-connector' ) );
+            $error_message = isset( $body['msg'] ) ? $body['msg'] : __( 'Failed to retrieve inbounds.', 'woocommerce-xui-connector' );
+            return new WP_Error( 'xui_inbounds_failed', $error_message );
         }
 
         return $body['obj'];
@@ -100,7 +102,7 @@ class XUI_Api_Client {
     public function add_client( $inbound_id, $email, $data_limit_gb, $duration_days ) {
         // Generate a new UUID for the client and a random subId for the link.
         $uuid   = wp_generate_uuid4();
-        $sub_id = bin2hex( random_bytes( 16 ) );
+        $sub_id = wp_generate_password( 32, false );
 
         // Calculate total bytes (totalGB).
         $total_gb = $data_limit_gb * 1024 * 1024 * 1024;
@@ -108,9 +110,9 @@ class XUI_Api_Client {
         // Calculate expiry time (expireTime) in milliseconds.
         $expire_time = ( time() + ( $duration_days * 24 * 60 * 60 ) ) * 1000;
 
-        $client_settings = [
-            'clients' => [
-                [
+        $client_settings = array(
+            'clients' => array(
+                array(
                     'id'         => $uuid,
                     'flow'       => '',
                     'email'      => $email,
@@ -119,21 +121,21 @@ class XUI_Api_Client {
                     'enable'     => true,
                     'tgId'       => '',
                     'subId'      => $sub_id,
-                ],
-            ],
-        ];
+                ),
+            ),
+        );
 
         $response = wp_remote_post(
             $this->base_url . 'panel/api/inbounds/addClient',
-            [
-                'body'    => json_encode( [
+            array(
+                'body'    => json_encode( array(
                     'id'       => $inbound_id,
                     'settings' => json_encode( $client_settings ),
-                ] ),
-                'headers' => [ 'Content-Type' => 'application/json' ],
+                ) ),
+                'headers' => array( 'Content-Type' => 'application/json' ),
                 'cookies' => $this->cookie_jar->get_cookies(),
                 'timeout' => 20,
-            ]
+            )
         );
 
         if ( is_wp_error( $response ) ) {
@@ -143,7 +145,8 @@ class XUI_Api_Client {
         $body = json_decode( wp_remote_retrieve_body( $response ), true );
 
         if ( ! $body['success'] ) {
-            return new WP_Error( 'xui_add_client_failed', $body['msg'] ?? __( 'Failed to create client.', 'woocommerce-xui-connector' ) );
+            $error_message = isset( $body['msg'] ) ? $body['msg'] : __( 'Failed to create client.', 'woocommerce-xui-connector' );
+            return new WP_Error( 'xui_add_client_failed', $error_message );
         }
 
         // Return the generated subId so the subscription link can be constructed.

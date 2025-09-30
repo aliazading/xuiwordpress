@@ -20,10 +20,10 @@ class XUI_Admin_Settings {
      * Initialize the class and set up the hooks.
      */
     public function __construct() {
-        add_action( 'admin_menu', [ $this, 'add_admin_menu' ] );
-        add_action( 'admin_init', [ $this, 'register_settings' ] );
-        add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
-        add_action( 'wp_ajax_xui_test_connection', [ $this, 'ajax_test_connection' ] );
+        add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
+        add_action( 'admin_init', array( $this, 'register_settings' ) );
+        add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+        add_action( 'wp_ajax_xui_test_connection', array( $this, 'ajax_test_connection' ) );
     }
 
     /**
@@ -37,7 +37,7 @@ class XUI_Admin_Settings {
         wp_enqueue_script(
             'xui-admin-settings',
             plugin_dir_url( __FILE__ ) . 'js/settings.js',
-            [ 'jquery' ],
+            array( 'jquery' ),
             '1.0.0',
             true
         );
@@ -45,10 +45,10 @@ class XUI_Admin_Settings {
         wp_localize_script(
             'xui-admin-settings',
             'xui_admin_settings',
-            [
+            array(
                 'ajax_url' => admin_url( 'admin-ajax.php' ),
                 'nonce'    => wp_create_nonce( 'xui-test-connection-nonce' ),
-            ]
+            )
         );
     }
 
@@ -79,11 +79,11 @@ class XUI_Admin_Settings {
             wp_send_json_error( $inbounds->get_error_message() );
         }
 
-        wp_send_json_success( [
+        wp_send_json_success( array(
             'message'          => __( 'Connection successful!', 'woocommerce-xui-connector' ),
             'inbounds'         => $inbounds,
-            'enabled_inbounds' => get_option( 'xui_enabled_inbounds', [] ),
-        ] );
+            'enabled_inbounds' => get_option( 'xui_enabled_inbounds', array() ),
+        ) );
     }
 
     /**
@@ -95,18 +95,8 @@ class XUI_Admin_Settings {
             __( 'X-UI Connector', 'woocommerce-xui-connector' ),
             'manage_options',
             self::PAGE_ID,
-            [ $this, 'render_settings_page' ]
+            array( $this, 'render_settings_page' )
         );
-    }
-
-    /**
-     * Register the settings fields.
-     */
-    public function register_settings() {
-        register_setting( self::PAGE_ID, 'xui_api_url' );
-        register_setting( self::PAGE_ID, 'xui_api_username' );
-        register_setting( self::PAGE_ID, 'xui_api_password' );
-        register_setting( self::PAGE_ID, 'xui_enabled_inbounds' );
     }
 
     /**
@@ -116,7 +106,7 @@ class XUI_Admin_Settings {
         register_setting( self::PAGE_ID, 'xui_api_url', 'esc_url_raw' );
         register_setting( self::PAGE_ID, 'xui_api_username', 'sanitize_text_field' );
         register_setting( self::PAGE_ID, 'xui_api_password', 'sanitize_text_field' );
-        register_setting( self::PAGE_ID, 'xui_enabled_inbounds', [ $this, 'sanitize_inbounds' ] );
+        register_setting( self::PAGE_ID, 'xui_enabled_inbounds', array( $this, 'sanitize_inbounds' ) );
 
         add_settings_section(
             'xui_api_credentials',
@@ -128,41 +118,41 @@ class XUI_Admin_Settings {
         add_settings_field(
             'xui_api_url',
             __( 'Panel URL', 'woocommerce-xui-connector' ),
-            [ $this, 'render_text_input' ],
+            array( $this, 'render_text_input' ),
             self::PAGE_ID,
             'xui_api_credentials',
-            [ 'id' => 'xui_api_url', 'type' => 'url', 'placeholder' => 'https://panel.example.com' ]
+            array( 'id' => 'xui_api_url', 'type' => 'url', 'placeholder' => 'https://panel.example.com' )
         );
 
         add_settings_field(
             'xui_api_username',
             __( 'Username', 'woocommerce-xui-connector' ),
-            [ $this, 'render_text_input' ],
+            array( $this, 'render_text_input' ),
             self::PAGE_ID,
             'xui_api_credentials',
-            [ 'id' => 'xui_api_username' ]
+            array( 'id' => 'xui_api_username' )
         );
 
         add_settings_field(
             'xui_api_password',
             __( 'Password', 'woocommerce-xui-connector' ),
-            [ $this, 'render_text_input' ],
+            array( $this, 'render_text_input' ),
             self::PAGE_ID,
             'xui_api_credentials',
-            [ 'id' => 'xui_api_password', 'type' => 'password' ]
+            array( 'id' => 'xui_api_password', 'type' => 'password' )
         );
 
         add_settings_section(
             'xui_inbounds_section',
             __( 'Inbound Settings', 'woocommerce-xui-connector' ),
-            [ $this, 'render_inbounds_section_text' ],
+            array( $this, 'render_inbounds_section_text' ),
             self::PAGE_ID
         );
 
         add_settings_field(
             'xui_enabled_inbounds',
             __( 'Enabled Inbounds', 'woocommerce-xui-connector' ),
-            [ $this, 'render_inbounds_field' ],
+            array( $this, 'render_inbounds_field' ),
             self::PAGE_ID,
             'xui_inbounds_section'
         );
@@ -174,10 +164,10 @@ class XUI_Admin_Settings {
      * @param array $args The field arguments.
      */
     public function render_text_input( $args ) {
-        $id    = $args['id'];
-        $value = get_option( $id );
-        $type  = $args['type'] ?? 'text';
-        $placeholder = $args['placeholder'] ?? '';
+        $id          = $args['id'];
+        $value       = get_option( $id );
+        $type        = isset( $args['type'] ) ? $args['type'] : 'text';
+        $placeholder = isset( $args['placeholder'] ) ? $args['placeholder'] : '';
         echo '<input type="' . esc_attr( $type ) . '" id="' . esc_attr( $id ) . '" name="' . esc_attr( $id ) . '" value="' . esc_attr( $value ) . '" class="regular-text" placeholder="' . esc_attr( $placeholder ) . '">';
     }
 
@@ -205,7 +195,7 @@ class XUI_Admin_Settings {
      * @return array The sanitized array.
      */
     public function sanitize_inbounds( $input ) {
-        return is_array( $input ) ? array_map( 'absint', $input ) : [];
+        return is_array( $input ) ? array_map( 'absint', $input ) : array();
     }
 
     /**

@@ -15,8 +15,8 @@ class XUI_Product_Settings {
      * Initialize the class and set up the hooks.
      */
     public function __construct() {
-        add_action( 'add_meta_boxes', [ $this, 'add_meta_box' ] );
-        add_action( 'woocommerce_process_product_meta', [ $this, 'save_product_meta' ] );
+        add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ) );
+        add_action( 'woocommerce_process_product_meta', array( $this, 'save_product_meta' ) );
     }
 
     /**
@@ -26,7 +26,7 @@ class XUI_Product_Settings {
         add_meta_box(
             'xui_subscription_options',
             __( 'X-UI Subscription', 'woocommerce-xui-connector' ),
-            [ $this, 'render_meta_box_content' ],
+            array( $this, 'render_meta_box_content' ),
             'product',
             'side',
             'default'
@@ -93,7 +93,7 @@ class XUI_Product_Settings {
      * @param int $selected_inbound_id The currently selected inbound ID.
      */
     private function render_inbounds_dropdown( $selected_inbound_id ) {
-        $enabled_inbound_ids = get_option( 'xui_enabled_inbounds', [] );
+        $enabled_inbound_ids = get_option( 'xui_enabled_inbounds', array() );
 
         if ( empty( $enabled_inbound_ids ) ) {
             echo '<p>' . esc_html__( 'No inbounds enabled. Please configure them in the plugin settings.', 'woocommerce-xui-connector' ) . '</p>';
